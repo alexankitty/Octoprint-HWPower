@@ -6,9 +6,10 @@ import gpiozero
 import octoprint.plugin
 import octoprint.events
 
-class HWButtonsPlugin(octoprint.plugin.StartupPlugin, octoprint.plugin.SettingsPlugin):
+class HWButtonsPlugin(octoprint.plugin.StartupPlugin,
+                      octoprint.plugin.SettingsPlugin,
+                      octoprint.plugin.RestartNeedingPlugin):
     def __init__(self):
-        #super().__init__(self)
         self.power = None
         self.psu_status = None
         self.psu_on = None
@@ -17,6 +18,13 @@ class HWButtonsPlugin(octoprint.plugin.StartupPlugin, octoprint.plugin.SettingsP
 
     def on_after_startup(self):
         self.shutdown = self._settings.global_get(["server", "commands", "systemShutdownCommand"])
+        psucontrol_helpers = self._plugin_manager.get_helpers("psucontrol")
+        if not psucontrol_helpers or 'register_plugin' not in psucontrol_helpers.keys():
+            self._logger.warning("The version of PSUControl that is installed does not support plugin registration.")
+            return
+
+        self._logger.debug("Registering plugin with PSUControl")
+        psucontrol_helpers['register_plugin'](self)
         helpers = self._plugin_manager.get_helpers("psucontrol", "get_psu_state", "turn_psu_on", "turn_psu_off")
         if helpers and "get_psu_state" in helpers and "turn_psu_on" in helpers and "turn_psu_off" in helpers:
            self.psu_status = helpers["get_psu_state"]
@@ -27,6 +35,15 @@ class HWButtonsPlugin(octoprint.plugin.StartupPlugin, octoprint.plugin.SettingsP
             return
         self.power = gpiozero.Button(3, pull_up=True, hold_time=5)
         self.power.when_pressed = self.on_printerPower_pressed
+
+    def turn_psu_on(self):
+        self.status = True
+
+    def turn_psu_off(self):
+        self.status = False
+
+    def get_psu_state(self):
+        return self.status
 
     def __del__(self):
         self.power.close()
@@ -46,7 +63,7 @@ class HWButtonsPlugin(octoprint.plugin.StartupPlugin, octoprint.plugin.SettingsP
         else:
             self.psu_on()
             self._logger.info("Turning printer on. (Hardware button pressed)")
-            
+
     def on_power_held(self):
         if self._printer.is_operational() and self._printer.is_printing() and not self._printer.is_cancelling():
             self._logger.info("Cancelling print. (Hardware button pressed)")

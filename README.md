@@ -1,5 +1,7 @@
 # Octoprint-HWPower
-Simple python script to run as an octoprint plugin for shutting off the printer and pi on GPIO3.
+Simple python script to run as an octoprint plugin for shutting off the printer and pi on GPIO3.  
+Demonstration of the button in action can be found [here.](https://twitter.com/AlexankittyNya/status/1603863455953346560?t=wN2zBoCYkxUqPy-HZf3jYw&s=19
+)
 # Instructions
 I have no interest in making this anything proper but it's at least out here for whoever needs it.  
 Base code was ~~stolen~~ borrowed from here https://the-eg.github.io/2020/12/23/octoprint-hardware-buttons.html  
